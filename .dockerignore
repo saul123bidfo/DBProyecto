@@ -1,0 +1,14 @@
+**
+!package.json
+!package-lock.json
+!client/
+!client/**
+!server/
+!server/**
+!database/
+!database/**
+!scripts/
+!scripts/init-db.js
+!scripts/sql-parser.js
+!scripts/connect-db.js
+!Dockerfile

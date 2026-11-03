@@ -1,0 +1,657 @@
+{
+  "tables": [
+    {
+      "name": "calificacion",
+      "description": "Evaluación del otro participante después del viaje",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "pago",
+      "description": "Evidencia de cobro de un viaje finalizado",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "viaje",
+      "description": "Ejecución de una oferta aceptada; monto final derivado de Oferta",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "oferta",
+      "description": "Ofertas; la aceptación se representa mediante Viaje",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "solicitud",
+      "description": "Solicitud y propuesta de precio del pasajero",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "vehiculo",
+      "description": "Vehículos de cada conductor",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "conductor",
+      "description": "Habilitación de una persona como conductor",
+      "engine": "InnoDB"
+    },
+    {
+      "name": "usuario",
+      "description": "Personas; cualquier usuario puede solicitar un viaje",
+      "engine": "InnoDB"
+    }
+  ],
+  "columns": [
+    {
+      "table_name": "calificacion",
+      "name": "id_calificacion",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "PRI",
+      "extra": "auto_increment",
+      "description": ""
+    },
+    {
+      "table_name": "calificacion",
+      "name": "id_viaje",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "MUL",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "calificacion",
+      "name": "id_usuario",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "MUL",
+      "extra": "",
+      "description": "Autor; el destinatario es el otro participante"
+    },
+    {
+      "table_name": "calificacion",
+      "name": "puntaje",
+      "type": "tinyint(4)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "calificacion",
+      "name": "comentario",
+      "type": "varchar(500)",
+      "nullable": "NO",
+      "default_value": "''",
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "pago",
+      "name": "id_pago",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "PRI",
+      "extra": "auto_increment",
+      "description": ""
+    },
+    {
+      "table_name": "pago",
+      "name": "id_viaje",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "UNI",
+      "extra": "",
+      "description": "Un cobro por viaje"
+    },
+    {
+      "table_name": "pago",
+      "name": "metodo",
+      "type": "varchar(15)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "pago",
+      "name": "monto",
+      "type": "decimal(10,2)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": "Importe efectivamente cobrado, soles"
+    },
+    {
+      "table_name": "pago",
+      "name": "comision",
+      "type": "decimal(10,2)",
+      "nullable": "NO",
+      "default_value": "0.00",
+      "column_key": "",
+      "extra": "",
+      "description": "Importe de comisión, soles"
+    },
+    {
+      "table_name": "pago",
+      "name": "fecha_pago",
+      "type": "datetime",
+      "nullable": "NO",
+      "default_value": "current_timestamp()",
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "viaje",
+      "name": "id_viaje",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "PRI",
+      "extra": "auto_increment",
+      "description": ""
+    },
+    {
+      "table_name": "viaje",
+      "name": "id_oferta",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "UNI",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "viaje",
+      "name": "estado",
+      "type": "varchar(12)",
+      "nullable": "NO",
+      "default_value": "'pendiente'",
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "viaje",
+      "name": "hora_inicio",
+      "type": "datetime",
+      "nullable": "YES",
+      "default_value": "NULL",
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "viaje",
+      "name": "hora_fin",
+      "type": "datetime",
+      "nullable": "YES",
+      "default_value": "NULL",
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "oferta",
+      "name": "id_oferta",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "PRI",
+      "extra": "auto_increment",
+      "description": ""
+    },
+    {
+      "table_name": "oferta",
+      "name": "id_solicitud",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "MUL",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "oferta",
+      "name": "placa",
+      "type": "varchar(10)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "MUL",
+      "extra": "",
+      "description": "Vehículo ofertante; determina al conductor"
+    },
+    {
+      "table_name": "oferta",
+      "name": "monto",
+      "type": "decimal(10,2)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": "Precio propuesto por el conductor, soles"
+    },
+    {
+      "table_name": "oferta",
+      "name": "tiempo_llegada",
+      "type": "smallint(6)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": "Minutos estimados de llegada"
+    },
+    {
+      "table_name": "solicitud",
+      "name": "id_solicitud",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "PRI",
+      "extra": "auto_increment",
+      "description": ""
+    },
+    {
+      "table_name": "solicitud",
+      "name": "id_usuario",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "MUL",
+      "extra": "",
+      "description": "Pasajero solicitante"
+    },
+    {
+      "table_name": "solicitud",
+      "name": "origen",
+      "type": "varchar(200)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "solicitud",
+      "name": "destino",
+      "type": "varchar(200)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "solicitud",
+      "name": "precio_ofrecido",
+      "type": "decimal(10,2)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": "Propuesta inicial en soles"
+    },
+    {
+      "table_name": "solicitud",
+      "name": "estado",
+      "type": "varchar(12)",
+      "nullable": "NO",
+      "default_value": "'abierta'",
+      "column_key": "MUL",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "solicitud",
+      "name": "fecha_solicitud",
+      "type": "datetime",
+      "nullable": "NO",
+      "default_value": "current_timestamp()",
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "vehiculo",
+      "name": "placa",
+      "type": "varchar(10)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "PRI",
+      "extra": "",
+      "description": "Placa única del vehículo"
+    },
+    {
+      "table_name": "vehiculo",
+      "name": "id_conductor",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "MUL",
+      "extra": "",
+      "description": "Propietario del vehículo"
+    },
+    {
+      "table_name": "vehiculo",
+      "name": "marca",
+      "type": "varchar(50)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "vehiculo",
+      "name": "modelo",
+      "type": "varchar(60)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "vehiculo",
+      "name": "color",
+      "type": "varchar(30)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": ""
+    },
+    {
+      "table_name": "vehiculo",
+      "name": "anio",
+      "type": "smallint(6)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": "Año de fabricación"
+    },
+    {
+      "table_name": "conductor",
+      "name": "id_conductor",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "PRI",
+      "extra": "auto_increment",
+      "description": ""
+    },
+    {
+      "table_name": "conductor",
+      "name": "id_usuario",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "UNI",
+      "extra": "",
+      "description": "Perfil opcional de un usuario"
+    },
+    {
+      "table_name": "conductor",
+      "name": "licencia",
+      "type": "varchar(20)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "UNI",
+      "extra": "",
+      "description": "Licencia de conducir"
+    },
+    {
+      "table_name": "usuario",
+      "name": "id_usuario",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "PRI",
+      "extra": "auto_increment",
+      "description": "Identificador de persona"
+    },
+    {
+      "table_name": "usuario",
+      "name": "nombres",
+      "type": "varchar(120)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "",
+      "extra": "",
+      "description": "Nombres y apellidos"
+    },
+    {
+      "table_name": "usuario",
+      "name": "telefono",
+      "type": "varchar(20)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "UNI",
+      "extra": "",
+      "description": "Teléfono único con código de país"
+    },
+    {
+      "table_name": "usuario",
+      "name": "correo",
+      "type": "varchar(160)",
+      "nullable": "NO",
+      "default_value": null,
+      "column_key": "UNI",
+      "extra": "",
+      "description": "Correo de contacto único"
+    },
+    {
+      "table_name": "usuario",
+      "name": "fecha_registro",
+      "type": "datetime",
+      "nullable": "NO",
+      "default_value": "current_timestamp()",
+      "column_key": "",
+      "extra": "",
+      "description": "Fecha de alta"
+    }
+  ],
+  "keys": [
+    {
+      "table_name": "calificacion",
+      "name": "PRIMARY",
+      "column_name": "id_calificacion",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "calificacion",
+      "name": "uq_calificacion_autor",
+      "column_name": "id_viaje",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "calificacion",
+      "name": "uq_calificacion_autor",
+      "column_name": "id_usuario",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "calificacion",
+      "name": "fk_calificacion_usuario",
+      "column_name": "id_usuario",
+      "referenced_table": "usuario",
+      "referenced_column": "id_usuario"
+    },
+    {
+      "table_name": "calificacion",
+      "name": "fk_calificacion_viaje",
+      "column_name": "id_viaje",
+      "referenced_table": "viaje",
+      "referenced_column": "id_viaje"
+    },
+    {
+      "table_name": "pago",
+      "name": "PRIMARY",
+      "column_name": "id_pago",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "pago",
+      "name": "id_viaje",
+      "column_name": "id_viaje",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "pago",
+      "name": "fk_pago_viaje",
+      "column_name": "id_viaje",
+      "referenced_table": "viaje",
+      "referenced_column": "id_viaje"
+    },
+    {
+      "table_name": "viaje",
+      "name": "PRIMARY",
+      "column_name": "id_viaje",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "viaje",
+      "name": "id_oferta",
+      "column_name": "id_oferta",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "viaje",
+      "name": "fk_viaje_oferta",
+      "column_name": "id_oferta",
+      "referenced_table": "oferta",
+      "referenced_column": "id_oferta"
+    },
+    {
+      "table_name": "oferta",
+      "name": "PRIMARY",
+      "column_name": "id_oferta",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "oferta",
+      "name": "uq_oferta_solicitud_vehiculo",
+      "column_name": "id_solicitud",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "oferta",
+      "name": "uq_oferta_solicitud_vehiculo",
+      "column_name": "placa",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "oferta",
+      "name": "fk_oferta_solicitud",
+      "column_name": "id_solicitud",
+      "referenced_table": "solicitud",
+      "referenced_column": "id_solicitud"
+    },
+    {
+      "table_name": "oferta",
+      "name": "fk_oferta_vehiculo",
+      "column_name": "placa",
+      "referenced_table": "vehiculo",
+      "referenced_column": "placa"
+    },
+    {
+      "table_name": "solicitud",
+      "name": "PRIMARY",
+      "column_name": "id_solicitud",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "solicitud",
+      "name": "fk_solicitud_usuario",
+      "column_name": "id_usuario",
+      "referenced_table": "usuario",
+      "referenced_column": "id_usuario"
+    },
+    {
+      "table_name": "vehiculo",
+      "name": "PRIMARY",
+      "column_name": "placa",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "vehiculo",
+      "name": "fk_vehiculo_conductor",
+      "column_name": "id_conductor",
+      "referenced_table": "conductor",
+      "referenced_column": "id_conductor"
+    },
+    {
+      "table_name": "conductor",
+      "name": "PRIMARY",
+      "column_name": "id_conductor",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "conductor",
+      "name": "id_usuario",
+      "column_name": "id_usuario",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "conductor",
+      "name": "licencia",
+      "column_name": "licencia",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "conductor",
+      "name": "fk_conductor_usuario",
+      "column_name": "id_usuario",
+      "referenced_table": "usuario",
+      "referenced_column": "id_usuario"
+    },
+    {
+      "table_name": "usuario",
+      "name": "PRIMARY",
+      "column_name": "id_usuario",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "usuario",
+      "name": "telefono",
+      "column_name": "telefono",
+      "referenced_table": null,
+      "referenced_column": null
+    },
+    {
+      "table_name": "usuario",
+      "name": "correo",
+      "column_name": "correo",
+      "referenced_table": null,
+      "referenced_column": null
+    }
+  ]
+}

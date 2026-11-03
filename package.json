@@ -1,0 +1,35 @@
+{
+  "name": "indrive-base-datos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server/index.js --dev",
+    "build": "vite build --config client/vite.config.js",
+    "start": "node server/index.js",
+    "db:init": "node scripts/init-db.js",
+    "test": "node tests/validation.test.js && node tests/startup.test.js && node tests/connection.test.js",
+    "test:sql": "python3 scripts/verify-sql.py",
+    "test:integration": "node tests/api.integration.js",
+    "local": "node scripts/start-local.js",
+    "local:stop": "docker compose stop app db",
+    "local:logs": "docker compose logs --tail=80 db setup app",
+    "doctor": "node scripts/doctor.js",
+    "github:prepare": "python3 scripts/prepare-github.py"
+  },
+  "dependencies": {
+    "dotenv": "16.6.1",
+    "express": "4.22.3",
+    "mysql2": "3.15.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "vite": "6.4.4"
+  },
+  "description": "Aplicación académica basada en la sección 7 de `Informe_inDrive.docx`: personas, conductores, vehículos, solicitudes, ofertas, viajes, pagos y calificaciones. React + Express + SQL directo sobre MySQL 8.0.16 o superior. Compatibilidad del esquema comprobada en MariaDB 11.8.6. No representa el sistema real de inDrive.",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

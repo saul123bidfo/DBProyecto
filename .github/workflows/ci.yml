@@ -1,0 +1,81 @@
+name: Validación de la aplicación y MySQL
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0.44
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_only
+          MYSQL_ROOT_HOST: '%'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --protocol=TCP -h 127.0.0.1"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=30
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: indrive_academico
+      DB_USER: indrive_app
+      DB_PASSWORD: ci_app_only
+      HOST: 127.0.0.1
+      PORT: 3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Instalar versiones del lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Validación de entradas y errores de arranque
+        run: npm test
+      - name: Compilar React
+        run: npm run build
+      - name: Preparar MySQL y comprobar que reiniciar no repite el seed
+        env:
+          DB_ADMIN_USER: root
+          DB_ADMIN_PASSWORD: ci_root_only
+        run: |
+          npm run db:init -- --if-empty --seed
+          npm run db:init -- --if-empty --seed
+      - name: Probar API, datos y aceptación concurrente
+        run: |
+          node server/index.js > /tmp/indrive-server.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/api/health; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:3000/api/health
+          ALLOW_INTEGRATION_WRITES=1 npm run test:integration
+      - name: Mostrar errores del servidor si falla
+        if: failure()
+        run: cat /tmp/indrive-server.log 2>/dev/null || true
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir e iniciar la aplicación completa
+        run: docker compose up --build -d --wait --wait-timeout 240
+      - name: Comprobar conexión real desde HTTP
+        run: curl --fail --silent http://127.0.0.1:3000/api/health
+      - name: Diagnóstico de contenedores
+        if: failure()
+        run: docker compose logs --tail=80 db setup app
+      - name: Detener la instancia temporal del runner
+        if: always()
+        run: docker compose down

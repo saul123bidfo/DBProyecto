@@ -1,0 +1,58 @@
+services:
+  db:
+    image: mysql:8.0.44
+    environment:
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-cambiar_clave_administrador}
+    ports:
+      - '127.0.0.1:${DB_PORT:-3307}:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysql --protocol=TCP --host=127.0.0.1 --port=3306 --user=root --silent --skip-column-names --execute='SELECT 1' >/dev/null 2>&1
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+  setup:
+    image: indrive-lab:local
+    build: .
+    command: [node, scripts/init-db.js, --if-empty, --seed]
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: indrive_academico
+      DB_ADMIN_USER: root
+      DB_ADMIN_PASSWORD: ${MYSQL_ROOT_PASSWORD:-cambiar_clave_administrador}
+      DB_USER: ${DB_USER:-indrive_app}
+      DB_PASSWORD: ${DB_PASSWORD:-cambiar_clave_local}
+    depends_on:
+      db:
+        condition: service_healthy
+  app:
+    image: indrive-lab:local
+    build: .
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: indrive_academico
+      DB_USER: ${DB_USER:-indrive_app}
+      DB_PASSWORD: ${DB_PASSWORD:-cambiar_clave_local}
+      HOST: 0.0.0.0
+      PORT: 3000
+    ports:
+      - '127.0.0.1:${PORT:-3000}:3000'
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 7s
+      retries: 20
+      start_period: 5s
+    init: true
+volumes:
+  mysql_data:

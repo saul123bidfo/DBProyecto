@@ -1,0 +1,15 @@
+{
+  "engine": "/usr/sbin/mariadbd  Ver 11.8.6-MariaDB-0+deb13u1 from Debian for debian-linux-gnu on x86_64 (-- Please help get to 10k stars at https://github.com/MariaDB/Server)",
+  "mode": "bootstrap (motor real, sin sockets)",
+  "integrity": "PASS",
+  "academic_queries": "PASS",
+  "summary": {
+    "usuarios": 5,
+    "tablas": 8,
+    "viajes": 1,
+    "cobrado": 20.0,
+    "ofertas_bajo_promedio": 1,
+    "sin_ofertas": 1,
+    "promedio_conductor": 5.0
+  }
+}
