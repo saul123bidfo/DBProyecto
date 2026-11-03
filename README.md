@@ -1,4 +1,6 @@
-# inDrive Lab · Proyecto de Base de Datos
+# DBProyecto · inDrive Lab
+
+Aplicación web académica basada en inDrive, desarrollada con React, Node.js y MySQL. Implementa negociación de viajes, pagos y calificaciones, con integridad referencial, transacciones y un explorador de base de datos con diagrama ER y consultas SQL.
 
 Aplicación académica basada en la sección 7 de `Informe_inDrive.docx`. Implementa personas, conductores, vehículos, solicitudes, ofertas, viajes, pagos y calificaciones. React 18 + Express 4 + MySQL 8, con SQL directo, transacciones y restricciones reales. Es un modelo ilustrativo propio: no representa el sistema interno de inDrive.
 
