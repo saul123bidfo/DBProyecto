@@ -1,0 +1,71 @@
+name: Rendimiento de consultas aisladas
+on:
+  push:
+    branches:
+      - test/rendimiento-500-consultas
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lectura:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0.44
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_only
+          MYSQL_ROOT_HOST: '%'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --protocol=TCP -h 127.0.0.1"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=30
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: indrive_academico
+      DB_USER: indrive_app
+      DB_PASSWORD: ci_app_only
+      HOST: 127.0.0.1
+      PORT: 3000
+      LOAD_TEST_ISOLATED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Inicializar base efímera con datos ficticios
+        env:
+          DB_ADMIN_USER: root
+          DB_ADMIN_PASSWORD: ci_root_only
+        run: npm run db:init -- --if-empty --seed
+      - name: Guardar planes EXPLAIN estimados
+        run: node scripts/explain-academico.js
+      - name: Ejecutar 500 lecturas por nivel de concurrencia
+        run: |
+          node server/index.js > /tmp/indrive-load-server.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/api/health; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:3000/api/health
+          node scripts/load-500.js
+      - name: Conservar métricas, planes y errores del servidor
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendimiento-y-explain
+          path: |
+            load-results.json
+            explain-results.json
+            /tmp/indrive-load-server.log
+          if-no-files-found: warn
+          retention-days: 14
