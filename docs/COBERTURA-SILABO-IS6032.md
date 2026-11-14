@@ -16,9 +16,9 @@ Estados: **demostrado** = hay una implementación o prueba con evidencia identif
 | 8 | Pendiente de sílabo | Pendiente de asignación y cotejo |
 | 9 | Pendiente de sílabo | Pendiente de asignación y cotejo |
 | 10 | Pendiente de sílabo | Pendiente de asignación y cotejo |
-| 11 | Escalabilidad y XML, según indicación del equipo | Escalabilidad: prueba limitada [documentada](RENDIMIENTO-500.md), consultar ejecución real. XML: comparación teórica abajo; sin almacenamiento XML implementado |
+| 11 | Escalabilidad y XML, según indicación del equipo | Escalabilidad: prueba limitada [ejecutada](RENDIMIENTO-500.md#resultado-observado), sin escalado horizontal. XML: comparación teórica abajo; sin almacenamiento XML implementado |
 | 12 | Pendiente de sílabo | Pendiente de asignación y cotejo |
-| 13 | Procesamiento y optimización de consultas con EXPLAIN, según indicación del equipo | EXPLAIN preparado en CI; comprobar el artefacto de la ejecución. Optimización antes/después con datos representativos pendiente |
+| 13 | Procesamiento y optimización de consultas con EXPLAIN, según indicación del equipo | EXPLAIN estimado ejecutado en [Actions 43649023528](https://github.com/saul123bidfo/DBProyecto/actions/runs/43649023528), con planes guardados en el artefacto. Optimización antes/después con datos representativos pendiente |
 | 14 | NoSQL, MongoDB y grafos, según indicación del equipo para semanas 14–15 | Comparación teórica abajo; no hay MongoDB ni base de grafos implementados. Distribución exacta por semana pendiente |
 | 15 | NoSQL, MongoDB y grafos, según indicación del equipo para semanas 14–15 | Comparación teórica abajo; implementación y ejercicios ejecutados pendientes |
 

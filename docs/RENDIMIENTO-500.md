@@ -14,4 +14,17 @@ La prueba verifica 500 solicitudes **totales** en cada escenario; 50 es el máxi
 
 Se ejecuta EXPLAIN estimado para las seis consultas, antes de la carga. El archivo conserva filas del plan, selección de índices y estimaciones devueltas por MySQL para ese seed; no equivale a EXPLAIN ANALYZE ni demuestra una optimización en otros tamaños de datos. Una comparación antes/después y una prueba con datos representativos siguen pendientes.
 
-Los resultados medidos y el enlace a la ejecución se añadirán una vez observados; no se anticipan cifras.
+## Resultado observado
+
+[Actions 43649023528](https://github.com/saul123bidfo/DBProyecto/actions/runs/43649023528), commit bbc2205, 14 de noviembre de 2026; Node 20.19.2, Linux x64 y MySQL 8.0.44. Una sola ejecución; seed con cinco usuarios, cuatro ofertas y un viaje.
+
+| Concurrencia | Correctas / total | Fallidas | Duración (s) | Promedio (ms) | p50 (ms) | p95 (ms) | p99 (ms) | Correctas/s |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 5 | 500/500 | 0 | 0,38 | 3,78 | 3,23 | 6,26 | 10,91 | 1.317,24 |
+| 25 | 500/500 | 0 | 0,32 | 15,69 | 14,52 | 24,12 | 59,31 | 1.563,51 |
+| 50 | 500/500 | 0 | 0,26 | 25,37 | 25,84 | 32,43 | 38,17 | 1.925,84 |
+
+No se observaron errores HTTP/SQL en estas 1.500 respuestas; /api/health confirmó conexión MySQL después de cada escenario. Son ráfagas muy breves: las tasas son aproximaciones de esa ejecución, no capacidad sostenida. No se fijó un umbral de latencia. El p99 no aumenta de manera uniforme; con muestras cortas y runner compartido no se debe interpretar como tendencia. No se midieron CPU ni memoria.
+
+EXPLAIN sobre el seed eligió `ix_solicitud_estado_fecha` y `uq_oferta_solicitud_vehiculo` para solicitudes sin ofertas. En ofertas bajo promedio estimó lectura `ALL` sobre cuatro filas y subconsulta dependiente; para promedios informó `Using temporary; Using filesort`. Son observaciones del plan de datos diminutos, no prueba de un problema de producción ni justificación suficiente para agregar índices. Repetir con volúmenes y distribución representativos, métricas de recursos y comparación antes/después es trabajo pendiente.
+
