@@ -12,7 +12,7 @@ La matriz relaciona los temas indicados para el curso con materiales de este pro
 | Álgebra relacional | [dos ejemplos](ALGEBRA-RELACIONAL.md) | Preparados; cotejar simbología con docente |
 | SQL | [seis consultas](../database/03-consultas.sql) | Validación previa en MariaDB documentada |
 | Integridad | [DDL y triggers](../database/01-schema.sql), [prueba SQL](../tests/integrity.sql) | Evidencia previa MariaDB; CI también comprueba flujo y rechazos API |
-| Transacciones y concurrencia | [transacción](../server/db.js), [prueba API](../tests/api.integration.js) | [Actions 43644268398](https://github.com/saul123bidfo/DBProyecto/actions/runs/43644268398) aprobó la concurrencia de dos ofertas distintas en 0805a96; rollback tras escritura parcial pendiente |
+| Transacciones y concurrencia | [transacción](../server/db.js), [prueba API](../tests/api.integration.js) | [Actions 43644417563](https://github.com/saul123bidfo/DBProyecto/actions/runs/43644417563) aprobó concurrencia de dos ofertas y rollback tras inserción en dd6f5cb; ensayo manual pendiente |
 | Demostración | [guía](GUIA-ENTREGA.md) | Pendiente de ensayo manual y capturas reales |
 
 No presentar cifras, resultados o capturas simuladas como pruebas. El informe original y su copia corregida no se reescribieron en esta tarea.
