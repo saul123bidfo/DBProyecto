@@ -52,6 +52,17 @@ assert.equal((await request('/data/pago','POST',{id_viaje:v.id,metodo:'efectivo'
 assert.equal((await request('/data/calificacion','POST',{id_viaje:v.id,id_usuario:stranger.id,puntaje:5,comentario:''})).status,409);
 await ok('/data/calificacion','POST',{id_viaje:v.id,id_usuario:p.id,puntaje:5,comentario:'Flujo validado'});
 await ok('/data/calificacion','POST',{id_viaje:v.id,id_usuario:d.id,puntaje:4,comentario:'Pasajero puntual'});
+// Comprueba ROLLBACK después de una escritura real en una transacción.
+const {pool,transaction}=await import('../server/db.js');
+const rollbackOrigin='Rollback transacción '+token;
+try {
+ await assert.rejects(transaction(async connection=>{
+  await connection.execute('INSERT INTO solicitud(id_usuario,origen,destino,precio_ofrecido) VALUES(?,?,?,?)',[p.id,rollbackOrigin,'Destino prueba',10]);
+  throw new Error('Forzar rollback de prueba');
+ }),/Forzar rollback de prueba/);
+ const [[rolledBack]]=await pool.execute('SELECT COUNT(*) AS total FROM solicitud WHERE origen=?',[rollbackOrigin]);
+ assert.equal(rolledBack.total,0);
+} finally {await pool.end();}
 const explorer=await ok('/explorer');assert.equal(explorer.tables.length,8);assert.equal(explorer.keys.filter(k=>k.referenced_table).length,9);
 const catalog=await ok('/queries');for(const q of Object.values(catalog).filter(q=>q&&typeof q==='object'&&q.id))await ok('/queries/'+q.id,'POST',q.param?{[q.param.name]:q.param.default}:{});
 assert.equal((await request('/queries/inventada','POST',{})).status,404);
