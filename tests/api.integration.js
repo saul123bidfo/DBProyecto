@@ -18,6 +18,32 @@ assert.equal((await request('/data/usuario/'+p.id,'DELETE',{})).status,409);
 const accepted=await Promise.all([request(`/offers/${a.id}/accept`,'POST',{}),request(`/offers/${a.id}/accept`,'POST',{})]);
 assert.deepEqual(accepted.map(r=>r.status).sort(),[201,409]);
 const v=accepted.find(r=>r.status===201);
+
+// Dos ofertas distintas de una misma solicitud compiten en paralelo.
+const placa2='U'+token.slice(-7);
+await ok('/data/vehiculo','POST',{placa:placa2,id_conductor:c.id,marca:'Kia',modelo:'Rio',color:'Azul',anio:2021});
+const s2=await ok('/data/solicitud','POST',{id_usuario:p.id,origen:'Origen concurrencia '+token,destino:'Destino concurrencia',precio_ofrecido:18});
+const b1=await ok('/data/oferta','POST',{id_solicitud:s2.id,placa,monto:21,tiempo_llegada:5});
+const b2=await ok('/data/oferta','POST',{id_solicitud:s2.id,placa:placa2,monto:22,tiempo_llegada:6});
+const race=await Promise.all([request(`/offers/${b1.id}/accept`,'POST',{}),request(`/offers/${b2.id}/accept`,'POST',{})]);
+assert.deepEqual(race.map(r=>r.status).sort(),[201,409]);
+const winnerId=race.find(r=>r.status===201).id;
+const trips=await ok('/data/viaje');
+const matching=trips.rows.filter(row=>[b1.id,b2.id].includes(row.id_oferta));
+assert.equal(matching.length,1);
+assert.equal(matching[0].id_viaje,winnerId);
+const requests=await ok('/data/solicitud?q='+encodeURIComponent('Origen concurrencia '+token));
+assert.equal(requests.rows.find(row=>row.id_solicitud===s2.id)?.estado,'aceptada');
+
+// Una aceptación rechazada no debe crear un viaje ni cambiar la solicitud cancelada.
+const s3=await ok('/data/solicitud','POST',{id_usuario:p.id,origen:'Origen rollback '+token,destino:'Destino rollback',precio_ofrecido:15});
+const rejectedOffer=await ok('/data/oferta','POST',{id_solicitud:s3.id,placa,monto:16,tiempo_llegada:5});
+await ok(`/requests/${s3.id}/cancel`,'POST',{});
+assert.equal((await request(`/offers/${rejectedOffer.id}/accept`,'POST',{})).status,409);
+const afterFailure=await ok('/data/viaje');
+assert.equal(afterFailure.rows.some(row=>row.id_oferta===rejectedOffer.id),false);
+const cancelled=await ok('/data/solicitud?q='+encodeURIComponent('Origen rollback '+token));
+assert.equal(cancelled.rows.find(row=>row.id_solicitud===s3.id)?.estado,'cancelada');
 assert.equal((await request('/data/pago','POST',{id_viaje:v.id,metodo:'efectivo',comision:1})).status,400);
 await ok(`/trips/${v.id}/start`,'POST',{});
 await ok(`/trips/${v.id}/finish`,'POST',{});
