@@ -1,0 +1,35 @@
+Resultados de rendimiento de inDrive Lab (solo lectura) · 2026-11-14
+Equipo local: app Node 20 + MySQL 8.0.44 en Docker, base de demostración con 504 solicitudes. Pool de la app: 8 conexiones.
+Comando: python3 scripts/demo-500/prueba-rendimiento.py http://127.0.0.1:3000 <clientes>
+Cada pasada = 500 peticiones GET sobre 76 rutas distintas (listas paginadas, búsqueda, panel, explorador, catálogo).
+Se valida el cuerpo de la respuesta, no solo el HTTP 200. No se escribió ningún dato.
+
+Clientes simultáneos | correctas/500 | errores | req/s | media ms | p95 ms | p99 ms | máx ms
+ 1  (secuencial)      | 500           | 0       | 109   |  9,2     |  12,2  |  14,2  |  30,3
+ 10                   | 500           | 0       | 420   | 23,5     |  32,2  |  49,0  |  56,9
+ 50                   | 500           | 0       | 499   | 95,0     | 133,1  | 226,3  | 269,9
+ 100                  | 500           | 0       | 536   | 162,1    | 211,5  | 492,2  | 594,0
+
+Tiempo por ruta (30 peticiones secuenciales, media): panel 12,0 ms · solicitudes pág. 1 11,1 ms · pág. 21 10,9 ms ·
+búsqueda "Wiener" 7,7 ms · conductores 11,3 ms · ofertas 7,0 ms · viajes 5,4 ms · explorador 13,4 ms · catálogo 1,4 ms.
+
+Después de las pruebas: /api/health responde conectado (MySQL 8.0.44); Threads_connected 11 (pool de 8 + conexiones de servicio),
+Max_used_connections 11, Slow_queries 0. Aborted_connects 3 acumulados desde el arranque del contenedor (no se investigó su origen);
+todas las peticiones de estas pruebas terminaron sin error.
+
+EXPLAIN (consultas del catálogo y vistas paginadas):
+- Viajes y participantes: recorre viaje por clave primaria hacia atrás y resuelve 6 JOIN con eq_ref sobre PRIMARY (1 fila por salto).
+- Solicitudes sin ofertas: usa ix_solicitud_estado_fecha y "Not exists; Using index" en el LEFT JOIN.
+- Negociaciones abiertas: JOIN por fk_vehiculo_conductor, fk_oferta_vehiculo y PRIMARY; sin recorridos completos de tablas grandes.
+- Ofertas bajo el promedio: la tabla externa (oferta, 744 filas) se recorre completa (type=ALL) y la subconsulta correlacionada usa uq_oferta_solicitud_vehiculo.
+- Listas paginadas: el motor materializa la vista (504 filas) y ordena; panel: GROUP BY con tabla temporal sobre 151-221 filas.
+Conclusión: los únicos type=ALL están en tablas de 151 a 744 filas, donde el optimizador elige correctamente el recorrido completo,
+y todas las rutas responden en menos de 15 ms con 1 cliente. No hay un problema medido, por eso NO se crearon índices ni se modificaron tablas.
+Si el volumen creciera a decenas de miles de filas, lo primero que habría que revisar es la materialización de las vistas paginadas y el LIKE '%texto%'.
+
+QUÉ SIGNIFICAN ESTOS NÚMEROS
+- 500 peticiones correctas NO son 500 usuarios simultáneos. Aquí hay 500 peticiones de lectura repartidas entre 1 y 100 clientes simultáneos.
+- 100 clientes concurrentes se atienden en cola sobre 8 conexiones a MySQL: el 99 % termina en menos de 0,5 s, a costa de más latencia.
+- No se midió: 500 personas con sesiones, tiempos de espera humanos, ni escrituras concurrentes bajo carga (la concurrencia de escritura
+  se comprueba aparte: dos aceptaciones simultáneas de una misma solicitud devuelven 201 y 409, ver tests/api.integration.js).
+- Es una medida de la capacidad de lectura de ESTE equipo con ESTE volumen de datos; no es una garantía de producción.

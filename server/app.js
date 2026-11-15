@@ -33,7 +33,18 @@ app.get('/api/health',route(async(req,res)=>{const [[row]]=await pool.query('SEL
 app.get('/api/config',(req,res)=>res.json(entities));
 app.get('/api/dashboard',route(async(req,res)=>{
  const [[row]]=await pool.query(`SELECT (SELECT COUNT(*) FROM usuario) AS usuarios,(SELECT COUNT(*) FROM conductor) AS conductores,(SELECT COUNT(*) FROM solicitud WHERE estado='abierta') AS abiertas,(SELECT COUNT(*) FROM viaje) AS viajes,(SELECT COALESCE(SUM(monto),0) FROM pago) AS cobrado,(SELECT COALESCE(SUM(comision),0) FROM pago) AS comisiones`);
- const [recent]=await pool.query(`${views.solicitud} ORDER BY s.id_solicitud DESC LIMIT 5`);res.json({stats:row,recent});
+ const [recent]=await pool.query(`${views.solicitud} ORDER BY s.id_solicitud DESC LIMIT 5`);
+ // Agregaciones reales para los gráficos: COUNT/GROUP BY, SUM y AVG calculados por MySQL.
+ const [porEstado]=await pool.query(`SELECT estado,COUNT(*) AS total FROM solicitud GROUP BY estado ORDER BY total DESC`);
+ const [viajesMes]=await pool.query(`SELECT mes,total FROM (SELECT DATE_FORMAT(hora_inicio,'%Y-%m') AS mes,COUNT(*) AS total FROM viaje WHERE hora_inicio IS NOT NULL GROUP BY mes ORDER BY mes DESC LIMIT 12) t ORDER BY mes`);
+ const [pagos]=await pool.query(`SELECT metodo,COUNT(*) AS pagos,SUM(monto) AS monto,SUM(comision) AS comision FROM pago GROUP BY metodo ORDER BY monto DESC`);
+ const [conductores]=await pool.query(`SELECT d.id_conductor,u.nombres,COUNT(*) AS evaluaciones,ROUND(AVG(c.puntaje),2) AS promedio FROM conductor d JOIN usuario u ON u.id_usuario=d.id_usuario JOIN vehiculo a ON a.id_conductor=d.id_conductor JOIN oferta o ON o.placa=a.placa JOIN viaje v ON v.id_oferta=o.id_oferta JOIN solicitud s ON s.id_solicitud=o.id_solicitud JOIN calificacion c ON c.id_viaje=v.id_viaje AND c.id_usuario=s.id_usuario GROUP BY d.id_conductor,u.nombres HAVING COUNT(*)>=3 ORDER BY promedio DESC,evaluaciones DESC,d.id_conductor LIMIT 5`);
+ const [actividad]=await pool.query(`SELECT * FROM (
+  (SELECT 'solicitud' AS tipo,s.fecha_solicitud AS fecha,CONCAT(u.nombres,' · ',s.origen,' → ',s.destino) AS detalle FROM solicitud s JOIN usuario u ON u.id_usuario=s.id_usuario ORDER BY s.fecha_solicitud DESC LIMIT 4)
+  UNION ALL (SELECT 'viaje',j.hora_inicio,CONCAT('Viaje #',j.id_viaje,' iniciado · ',s.origen,' → ',s.destino) FROM viaje j JOIN oferta o ON o.id_oferta=j.id_oferta JOIN solicitud s ON s.id_solicitud=o.id_solicitud WHERE j.hora_inicio IS NOT NULL ORDER BY j.hora_inicio DESC LIMIT 4)
+  UNION ALL (SELECT 'pago',p.fecha_pago,CONCAT('Pago ',p.metodo,' · S/ ',FORMAT(p.monto,2),' · viaje #',p.id_viaje) FROM pago p ORDER BY p.fecha_pago DESC LIMIT 4)
+ ) a ORDER BY fecha DESC LIMIT 5`);
+ res.json({stats:row,recent,charts:{solicitudes:porEstado,viajesPorMes:viajesMes,pagosPorMetodo:pagos,conductores,minimoEvaluaciones:3},actividad});
 }));
 app.get('/api/options/:table',route(async(req,res)=>{
  const table=req.params.table;config(table);let sql;
@@ -63,6 +74,12 @@ app.post('/api/queries/:id',route(async(req,res)=>{
  const q=queries.find(q=>q.id===req.params.id);if(!q)fail('Consulta desconocida',404);
  const params=[];if(q.param){const v=Number(req.body[q.param.name]??q.param.default);if(!Number.isInteger(v)||v<q.param.min||v>q.param.max)fail('Parámetro fuera de rango');params.push(v);}
  const start=performance.now();const [rows,fields]=await pool.execute(q.sql,params);res.json({rows,columns:fields.map(f=>f.name),ms:Math.round((performance.now()-start)*100)/100,sql:q.sql,params,limit:200});
+}));
+app.post('/api/queries/:id/explain',route(async(req,res)=>{
+ // Plan de ejecución del optimizador (solo lectura): EXPLAIN sobre una consulta del catálogo, nunca sobre texto libre.
+ const q=queries.find(q=>q.id===req.params.id);if(!q)fail('Consulta desconocida',404);
+ const params=[];if(q.param){const v=Number(req.body?.[q.param.name]??q.param.default);if(!Number.isInteger(v)||v<q.param.min||v>q.param.max)fail('Parámetro fuera de rango');params.push(v);}
+ const [rows,fields]=await pool.execute('EXPLAIN '+q.sql,params);res.json({rows,columns:fields.map(f=>f.name)});
 }));
 app.get('/api/data/:table',route(async(req,res)=>{
  const table=req.params.table,cfg=config(table);const term=String(req.query.q||'').slice(0,200),page=Math.max(1,Math.min(100000,parseInt(req.query.page)||1)),size=25;
