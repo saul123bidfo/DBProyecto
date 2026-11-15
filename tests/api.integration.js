@@ -67,3 +67,62 @@ const explorer=await ok('/explorer');assert.equal(explorer.tables.length,8);asse
 const catalog=await ok('/queries');for(const q of Object.values(catalog).filter(q=>q&&typeof q==='object'&&q.id))await ok('/queries/'+q.id,'POST',q.param?{[q.param.name]:q.param.default}:{});
 assert.equal((await request('/queries/inventada','POST',{})).status,404);
 console.log('PASS: alta, FK, rechazo de borrado, aceptación concurrente, viaje, cobro, calificación, metadatos y consultas.');
+// ---- Ediciones, operaciones inválidas y restricciones (todas deben ser rechazadas con el estado HTTP correcto) ----
+const status=async(path,method,body)=>(await request(path,method,body)).status;
+// Edición de registros existentes
+await ok('/data/usuario/'+p.id,'PUT',{nombres:'Pasajero editado '+token,telefono:'+51'+token.slice(-10),correo:`p${token}@example.test`});
+assert.equal((await ok('/data/usuario?q='+encodeURIComponent('Pasajero editado '+token))).total,1);
+await ok('/data/vehiculo/'+placa,'PUT',{id_conductor:c.id,marca:'Toyota',modelo:'Yaris Cross',color:'Gris',anio:2023});
+await ok('/data/conductor/'+c.id,'PUT',{licencia:'T'+token+'X'});
+// Unicidad (UNIQUE) y formato
+assert.equal(await status('/data/usuario','POST',{nombres:'Duplicado',telefono:'+51'+token.slice(-10),correo:`otro${token}@example.test`}),409);
+assert.equal(await status('/data/usuario','POST',{nombres:'Duplicado',telefono:'+99'+token.slice(-10),correo:`p${token}@example.test`}),409);
+assert.equal(await status('/data/usuario','POST',{nombres:'Sin correo válido',telefono:'+98'+token.slice(-10),correo:'no-es-correo'}),400);
+assert.equal(await status('/data/conductor','POST',{id_usuario:d.id,licencia:'OTRA'+token}),409);
+assert.equal(await status('/data/vehiculo','POST',{placa,id_conductor:c.id,marca:'X',modelo:'Y',color:'Z',anio:2020}),409);
+// Integridad referencial: FK inexistente y borrado restringido
+assert.equal(await status('/data/solicitud','POST',{id_usuario:99999999,origen:'A',destino:'B',precio_ofrecido:10}),400);
+assert.equal(await status('/data/conductor/'+c.id,'DELETE',{}),409);
+assert.equal(await status('/data/vehiculo/'+placa,'DELETE',{}),409);
+assert.equal(await status('/data/viaje/'+v.id,'DELETE',{}),400);
+assert.equal(await status('/data/pago/1','DELETE',{}),400);
+// CHECK y validación: importes, puntajes, origen igual a destino
+assert.equal(await status('/data/solicitud','POST',{id_usuario:p.id,origen:'Mismo',destino:'Mismo',precio_ofrecido:10}),400);
+assert.equal(await status('/data/solicitud','POST',{id_usuario:p.id,origen:'A',destino:'B',precio_ofrecido:-5}),400);
+assert.equal(await status('/data/calificacion','POST',{id_viaje:v.id,id_usuario:p.id,puntaje:6,comentario:''}),400);
+assert.equal(await status('/data/pago','POST',{id_viaje:v.id,metodo:'bitcoin',comision:1}),400);
+assert.equal(await status('/data/oferta','POST',{id_solicitud:s.id,placa,monto:0,tiempo_llegada:3}),400);
+// Reglas de negocio implementadas con triggers
+assert.equal(await status('/data/oferta','POST',{id_solicitud:s.id,placa,monto:25,tiempo_llegada:3}),409,'solicitud ya aceptada');
+const propia=await ok('/data/solicitud','POST',{id_usuario:d.id,origen:'Solicitud del conductor',destino:'Destino propio',precio_ofrecido:12});
+assert.equal(await status('/data/oferta','POST',{id_solicitud:propia.id,placa,monto:13,tiempo_llegada:3}),409,'el conductor no oferta en su propia solicitud');
+assert.equal(await status('/data/pago','POST',{id_viaje:v.id,metodo:'tarjeta',comision:9999}),400,'comisión mayor al monto');
+// Estados de viaje y de solicitud
+assert.equal(await status(`/trips/${v.id}/start`,'POST',{}),409);
+assert.equal(await status(`/trips/${v.id}/finish`,'POST',{}),409);
+assert.equal(await status(`/trips/999999999/start`,'POST',{}),404);
+assert.equal(await status(`/requests/${s.id}/cancel`,'POST',{}),409);
+assert.equal(await status('/offers/999999999/accept','POST',{}),404);
+// Identificadores y rutas inválidas
+assert.equal(await status('/data/inexistente'),404);
+assert.equal(await status('/data/usuario/abc','PUT',{}),400);
+assert.equal(await status('/queries/promedios','POST',{minimo:0}),400);
+assert.equal(await status('/queries/inventada/explain','POST',{}),404);
+// Búsqueda por nombre visible y paginación
+const porNombre=await ok('/data/solicitud?q='+encodeURIComponent('Pasajero editado '+token));
+assert.ok(porNombre.total>=2&&porNombre.rows.every(r=>r.pasajero.includes('Pasajero editado')));
+const todas=await ok('/data/solicitud?page=1');assert.equal(todas.rows.length,Math.min(25,todas.total));assert.equal(todas.pages,Math.ceil(todas.total/25));
+const ultima=await ok('/data/solicitud?page='+todas.pages);assert.ok(ultima.rows.length>=1&&ultima.rows.length<=25);
+// Panel: las agregaciones de MySQL deben coincidir con los totales de las tablas
+const dash=await ok('/dashboard');
+const totalSolicitudes=(await ok('/data/solicitud')).total;
+assert.equal(dash.charts.solicitudes.reduce((a,r)=>a+r.total,0),totalSolicitudes);
+assert.ok(Math.abs(dash.charts.pagosPorMetodo.reduce((a,r)=>a+r.monto,0)-dash.stats.cobrado)<0.005);
+assert.equal(dash.charts.pagosPorMetodo.reduce((a,r)=>a+r.pagos,0),(await ok('/data/pago')).total);
+assert.ok(dash.charts.viajesPorMes.every(r=>/^\d{4}-\d{2}$/.test(r.mes)&&r.total>0));
+assert.ok(dash.charts.conductores.every(r=>r.promedio>=1&&r.promedio<=5&&r.evaluaciones>=dash.charts.minimoEvaluaciones));
+assert.ok(dash.actividad.length>0&&dash.actividad.length<=5);
+// EXPLAIN real de cada consulta del catálogo
+for(const q of Object.values(catalog).filter(q=>q&&typeof q==='object'&&q.id)){const plan=await ok(`/queries/${q.id}/explain`,'POST',q.param?{[q.param.name]:q.param.default}:{});assert.ok(plan.rows.length>0&&plan.columns.includes('table'));}
+console.log('PASS: ediciones, rechazos (UNIQUE, FK, CHECK, triggers, estados), búsqueda, panel con agregaciones y EXPLAIN.');
+
